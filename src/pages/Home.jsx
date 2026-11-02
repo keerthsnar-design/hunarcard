@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { TRADES } from '../data/trades';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Home() {
+  const { t } = useLanguage();
   const existingCardId = localStorage.getItem('hunar_my_card_id');
 
   return (
@@ -35,7 +37,7 @@ export default function Home() {
             color: 'var(--text-main)'
           }}
         >
-          Your work speaks.<br />Let’s make your card.
+          {t('heroTitle', 'Your work speaks. Let’s make your card.')}
         </h1>
         <p
           style={{
@@ -46,7 +48,7 @@ export default function Home() {
             margin: '0 auto'
           }}
         >
-          For electricians, plumbers, drivers, technicians and operators. No password, no resume, no hassle.
+          {t('heroSubtitle', 'For electricians, plumbers, drivers, technicians and operators. No password, no resume, no hassle.')}
         </p>
       </div>
 
@@ -94,12 +96,12 @@ export default function Home() {
           </span>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-              I am a worker
+              {t('workerBtn', 'I am a worker')}
             </h2>
             <p style={{ fontSize: '0.95rem', opacity: 0.9, lineHeight: 1.35 }}>
               {existingCardId
                 ? 'View, edit or share your Hunar Card'
-                : 'Make your free skill card in 2 minutes. No password needed.'}
+                : t('workerSubtext', 'Make your free skill card in 2 minutes. No password needed.')}
             </p>
           </div>
           <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>→</span>
@@ -140,10 +142,10 @@ export default function Home() {
           </span>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-              I am hiring
+              {t('hiringBtn', 'I am hiring')}
             </h2>
             <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>
-              Find skilled workers nearby with real photos and honest customer vouches.
+              {t('hiringSubtext', 'Find skilled workers nearby with real photos and honest customer vouches.')}
             </p>
           </div>
           <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-muted)' }}>→</span>

@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase, isConfigured } from '../lib/supabase';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function WorkProof() {
+  const { t } = useLanguage();
   const { cardId } = useParams();
   const navigate = useNavigate();
+
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,9 +17,10 @@ export default function WorkProof() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Selected file and caption for new upload
+  // Selected file, source, and caption for new upload
   const [fileToUpload, setFileToUpload] = useState(null);
   const [filePreview, setFilePreview] = useState('');
+  const [photoSource, setPhotoSource] = useState('gallery'); // 'camera' or 'gallery'
   const [caption, setCaption] = useState('');
 
   // Load photos on mount
@@ -62,7 +68,15 @@ export default function WorkProof() {
     }
   };
 
-  const handleFileChange = (e) => {
+  // Compute SHA-256 hash of image file in browser
+  const computeFileHash = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const handleFileChange = (e, source = 'gallery') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -78,6 +92,7 @@ export default function WorkProof() {
     }
 
     setErrorMessage('');
+    setPhotoSource(source);
     setFileToUpload(file);
     const objectUrl = URL.createObjectURL(file);
     setFilePreview(objectUrl);
@@ -119,6 +134,19 @@ export default function WorkProof() {
         throw new Error('Your worker session was not found on this device. Please open your card from My Card to refresh your session.');
       }
 
+      // Compute SHA-256 hash of file
+      const fileHash = await computeFileHash(fileToUpload);
+
+      // Check if this exact photo already exists on a card owned by a different user
+      const { data: isDuplicate, error: hashError } = await supabase.rpc('photo_hash_exists', { h: fileHash });
+      if (hashError) {
+        console.warn('Duplicate photo check notice:', hashError.message);
+      } else if (isDuplicate === true) {
+        setErrorMessage('This photo is already used on another card. Please add a photo of your own work.');
+        setUploading(false);
+        return;
+      }
+
       // Generate random file name under auth.uid()/
       const fileExt = fileToUpload.name.split('.').pop() || 'jpg';
       const randomStr = Math.random().toString(36).substring(2, 9);
@@ -136,14 +164,16 @@ export default function WorkProof() {
         throw new Error(`Upload failed: ${uploadError.message}. Make sure the 'work-photos' bucket exists and is public in Supabase.`);
       }
 
-      // Insert row into work_photos table
+      // Insert row into work_photos table with source and file_hash
       const { error: insertError } = await supabase
         .from('work_photos')
         .insert({
           card_id: cardId,
           user_id: userId,
           file_path: filePath,
-          caption: caption.trim() || 'Work photo'
+          caption: caption.trim() || 'Work photo',
+          source: photoSource,
+          file_hash: fileHash
         });
 
       if (insertError) {
@@ -156,6 +186,7 @@ export default function WorkProof() {
       setFileToUpload(null);
       setFilePreview('');
       setCaption('');
+      setPhotoSource('gallery');
 
       // Refresh photo list
       await fetchPhotos();
@@ -200,7 +231,7 @@ export default function WorkProof() {
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.35rem', color: 'var(--text-main)' }}>
-          Add work proof
+          {t('addWorkProof', 'Add work proof')}
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
           Real work photos build instant trust. Add up to 3 photos of jobs you have done.
@@ -230,18 +261,56 @@ export default function WorkProof() {
           </h2>
 
           <form onSubmit={handleUploadPhoto}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="photo-file-input" className="form-label">
-                Choose a photo from your phone or computer
+            {/* Hidden file inputs for Camera and Gallery */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={(e) => handleFileChange(e, 'camera')}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => handleFileChange(e, 'gallery')}
+            />
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label" style={{ marginBottom: '0.6rem' }}>
+                Select photo source
               </label>
-              <input
-                id="photo-file-input"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="form-input"
-                style={{ padding: '0.5rem', cursor: 'pointer' }}
-              />
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="btn btn-secondary"
+                  style={{
+                    flex: '1 1 180px',
+                    minHeight: '48px',
+                    borderColor: photoSource === 'camera' && fileToUpload ? 'var(--border-focus)' : undefined
+                  }}
+                >
+                  <span>📸</span>
+                  <span>Take photo now</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="btn btn-secondary"
+                  style={{
+                    flex: '1 1 180px',
+                    minHeight: '48px',
+                    borderColor: photoSource === 'gallery' && fileToUpload ? 'var(--border-focus)' : undefined
+                  }}
+                >
+                  <span>🖼️</span>
+                  <span>Choose from gallery</span>
+                </button>
+              </div>
             </div>
 
             {filePreview && (
@@ -258,6 +327,20 @@ export default function WorkProof() {
                     backgroundColor: 'var(--bg-subtle)'
                   }}
                 />
+                <div style={{ marginTop: '0.4rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: 'var(--radius-full)',
+                      backgroundColor: photoSource === 'camera' ? 'var(--pastel-mint)' : 'var(--pastel-sky)',
+                      color: '#2d2850'
+                    }}
+                  >
+                    {photoSource === 'camera' ? '📷 Taken with phone camera' : '🖼️ Chosen from gallery'}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -290,7 +373,7 @@ export default function WorkProof() {
               ) : (
                 <>
                   <span>📸</span>
-                  <span>Upload this work photo</span>
+                  <span>{t('uploadPhotoBtn', 'Upload this work photo')}</span>
                 </>
               )}
             </button>
@@ -337,6 +420,20 @@ export default function WorkProof() {
                 <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', flex: 1 }}>
                   {p.caption || 'No caption'}
                 </p>
+                <div style={{ marginBottom: '0.4rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.725rem',
+                      fontWeight: 700,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: 'var(--radius-full)',
+                      backgroundColor: p.source === 'camera' ? 'var(--pastel-mint)' : 'var(--pastel-sky)',
+                      color: '#2d2850'
+                    }}
+                  >
+                    {p.source === 'camera' ? '📷 Camera' : '🖼️ Gallery'}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => handleDeletePhoto(p)}
@@ -360,7 +457,7 @@ export default function WorkProof() {
           className="btn btn-primary"
           style={{ flex: 1, minHeight: '52px', fontSize: '1.1rem' }}
         >
-          <span>See my card</span>
+          <span>{t('seeMyCardBtn', 'See my card')}</span>
           <span>→</span>
         </button>
       </div>

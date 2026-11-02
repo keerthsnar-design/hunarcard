@@ -3,8 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, isConfigured } from '../lib/supabase';
 import { getTradeByName } from '../data/trades';
+import { useLanguage } from '../context/LanguageContext';
+import SkillProofLevel from '../components/SkillProofLevel';
 
 export default function MyCard() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const cardId = localStorage.getItem('hunar_my_card_id');
 
@@ -261,7 +264,7 @@ export default function MyCard() {
             <span className="switch-thumb"></span>
           </span>
           <span style={{ fontWeight: 700, fontSize: '0.9rem', minWidth: '85px' }}>
-            {card.is_published ? 'Published' : 'Hidden'}
+            {card.is_published ? t('published', 'Published') : t('hidden', 'Hidden')}
           </span>
         </label>
       </div>
@@ -269,7 +272,7 @@ export default function MyCard() {
       {/* 2. Share Link & QR Code Box */}
       <div className="card-box">
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.75rem', color: 'var(--text-main)' }}>
-          Share your Hunar Card
+          {t('shareCard', 'Share your Hunar Card')}
         </h3>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
           Share your link on WhatsApp, or show this QR code to customers so they can vouch for your work.
@@ -311,7 +314,7 @@ export default function MyCard() {
                 className="btn btn-secondary"
                 style={{ minHeight: '44px', whiteSpace: 'nowrap' }}
               >
-                <span>{copySuccess ? '✓ Copied' : '📋 Copy'}</span>
+                <span>{copySuccess ? `✓ ${t('copied', 'Copied')}` : `📋 ${t('copyLink', 'Copy')}`}</span>
               </button>
             </div>
 
@@ -338,7 +341,15 @@ export default function MyCard() {
         </div>
       </div>
 
-      {/* 3. Live Preview of the Card */}
+      {/* 3. Skill Proof Level with Next Step Tip */}
+      <SkillProofLevel
+        card={card}
+        photos={photos}
+        vouches={vouches}
+        showNextStep={true}
+      />
+
+      {/* 4. Live Preview of the Card */}
       <div style={{ marginBottom: '1rem' }}>
         <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.75rem' }}>
           Card Preview (What employers see)

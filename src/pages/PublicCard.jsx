@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, isConfigured } from '../lib/supabase';
 import { getTradeByName } from '../data/trades';
+import { useLanguage } from '../context/LanguageContext';
+import SkillProofLevel from '../components/SkillProofLevel';
 
 export default function PublicCard() {
+  const { t } = useLanguage();
   const { id } = useParams();
 
   const [card, setCard] = useState(null);
@@ -408,10 +411,18 @@ export default function PublicCard() {
         </div>
       </div>
 
+      {/* Skill Proof Level */}
+      <SkillProofLevel
+        card={card}
+        photos={photos}
+        vouches={vouches}
+        showNextStep={false}
+      />
+
       {/* What people say (Vouches) */}
       <div className="card-box" style={{ marginTop: '1.5rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--text-main)' }}>
-          What people say ({vouches.length})
+          {t('whatPeopleSay', 'What people say')} ({vouches.length})
         </h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
           Real recommendations from customers, employers and fellow workers.
@@ -505,7 +516,7 @@ export default function PublicCard() {
           ) : (
             <div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.35rem', color: 'var(--text-main)' }}>
-                Worked with {card.card_name}?
+                {t('workedWith', 'Worked with')} {card.card_name}?
               </h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                 Leave a quick vouch in 140 characters. One vouch per person. No sign-up hassle.
@@ -569,7 +580,7 @@ export default function PublicCard() {
                   ) : (
                     <>
                       <span>🤝</span>
-                      <span>Vouch for {card.card_name}</span>
+                      <span>{t('vouchFor', 'Vouch for')} {card.card_name}</span>
                     </>
                   )}
                 </button>

@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase, isConfigured } from '../lib/supabase';
 import { TRADES, getTradeByName } from '../data/trades';
+import { useLanguage } from '../context/LanguageContext';
+import SkillProofLevel from '../components/SkillProofLevel';
 
 export default function FindWorkers() {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTrade = searchParams.get('trade') || 'All';
 
@@ -40,10 +43,10 @@ export default function FindWorkers() {
       setLoading(true);
       setErrorMessage('');
 
-      // Query only published cards
+      // Query published cards along with work photos and vouches for proof score calculation
       const { data, error } = await supabase
         .from('skill_cards')
-        .select('*')
+        .select('*, work_photos(id, caption), vouches(id, user_id)')
         .eq('is_published', true)
         .order('created_at', { ascending: false });
 
@@ -77,7 +80,7 @@ export default function FindWorkers() {
       {/* Page Title */}
       <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
-          Find skilled workers
+          {t('findWorkers', 'Find skilled workers')}
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '520px', margin: '0 auto' }}>
           Browse verified skill cards, see real work proof, and contact trustworthy local hands.
@@ -89,7 +92,7 @@ export default function FindWorkers() {
         {/* Area search input */}
         <div style={{ marginBottom: '1rem' }}>
           <label htmlFor="area-search" className="form-label" style={{ fontSize: '0.9rem' }}>
-            Search by town, area or skill
+            {t('customSkillPlaceholder', 'Search by town, area or skill')}
           </label>
           <div style={{ position: 'relative' }}>
             <span
@@ -278,6 +281,14 @@ export default function FindWorkers() {
 
                 {/* Card body */}
                 <div style={{ padding: '1rem 1.15rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  {/* Skill Proof Level Mini Bar */}
+                  <SkillProofLevel
+                    card={c}
+                    photos={c.work_photos || []}
+                    vouches={c.vouches || []}
+                    compact={true}
+                  />
+
                   {c.story && (
                     <p
                       style={{

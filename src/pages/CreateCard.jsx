@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isConfigured } from '../lib/supabase';
 import { TRADES, AVAILABILITY_OPTIONS, getTradeByName } from '../data/trades';
+import { useLanguage } from '../context/LanguageContext';
+import VoiceStoryInput from '../components/VoiceStoryInput';
 
 export default function CreateCard() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('id') || localStorage.getItem('hunar_my_card_id');
@@ -220,7 +223,7 @@ export default function CreateCard() {
       {/* Title */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.35rem', color: 'var(--text-main)' }}>
-          {editId ? 'Update your card' : 'Let’s make your card'}
+          {editId ? t('updateYourCard', 'Update your card') : t('makeYourCard', 'Let’s make your card')}
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
           No password, email or ID required. Just honest work and real photos.
@@ -240,10 +243,10 @@ export default function CreateCard() {
         <div className="card-box">
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label htmlFor="card-name-input" className="form-label">
-              What name should people call you? <span style={{ color: '#d33' }}>*</span>
+              {t('nameLabel', 'What name should people call you?')} <span style={{ color: '#d33' }}>*</span>
             </label>
             <span className="form-hint">
-              A first name or nickname is fine (e.g., &quot;Ramesh&quot; or &quot;Raju Electrician&quot;).
+              {t('nameHint', 'A first name or nickname is fine (e.g., "Ramesh" or "Raju Electrician").')}
             </span>
             <input
               id="card-name-input"
@@ -459,9 +462,16 @@ export default function CreateCard() {
         {/* 7. Short 'about me' Story (Max 140 chars) */}
         <div className="card-box">
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label htmlFor="story-input" className="form-label">
-              A short story in your own words
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.35rem' }}>
+              <label htmlFor="story-input" className="form-label" style={{ marginBottom: 0 }}>
+                {t('storyLabel', 'A short story in your own words')}
+              </label>
+              <VoiceStoryInput
+                currentText={story}
+                onTranscript={(newText) => setStory(newText)}
+                maxLength={140}
+              />
+            </div>
             <span className="form-hint">
               140 characters max. What makes your work reliable?
             </span>
@@ -494,10 +504,10 @@ export default function CreateCard() {
               </span>
               <div>
                 <strong style={{ display: 'block', fontSize: '1rem', color: 'var(--text-main)' }}>
-                  Show contact on my card
+                  {t('showContactLabel', 'Show contact on my card')}
                 </strong>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  If turned off, no contact note is stored or shown anywhere.
+                  {t('showContactHint', 'If turned off, no contact note is stored or shown anywhere.')}
                 </span>
               </div>
             </label>
@@ -506,7 +516,7 @@ export default function CreateCard() {
           {showContact && (
             <div className="form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
               <label htmlFor="contact-input" className="form-label">
-                How should people reach you?
+                {t('contactLabel', 'How should people reach you?')}
               </label>
               <span className="form-hint">
                 e.g. &quot;WhatsApp me on 9876543210&quot; or &quot;Call between 9 AM and 7 PM&quot;.
@@ -535,11 +545,11 @@ export default function CreateCard() {
             {loading ? (
               <>
                 <span className="spinner"></span>
-                <span>Saving your card...</span>
+                <span>{t('savingBtn', 'Saving your card...')}</span>
               </>
             ) : (
               <>
-                <span>Save and add work photos</span>
+                <span>{t('saveBtn', 'Save and add work photos')}</span>
                 <span>→</span>
               </>
             )}
